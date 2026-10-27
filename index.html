@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Mineral Murals Sign-in</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f6f3ee; --fg:#1f1b16; --muted:#6b6258; --accent:#7a4b2a; --card:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16130f; --fg:#f1ece4; --muted:#a99f93; --accent:#e0a879; --card:#221d18; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.45 -apple-system,system-ui,sans-serif; }
+  main { max-width:460px; margin:0 auto; padding:48px 16px; }
+  h1 { font-size:24px; margin:0 0 8px; }
+  p { color:var(--muted); margin:0 0 20px; }
+  a.button { display:block; text-align:center; background:var(--accent); color:#fff; text-decoration:none; padding:14px; border-radius:12px; font-weight:600; margin-bottom:12px; }
+  a.secondary { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  textarea { width:100%; box-sizing:border-box; height:84px; font:13px ui-monospace,monospace; border-radius:10px; padding:8px; background:var(--card); color:var(--fg); border:1px solid var(--muted); }
+  details { margin-top:24px; }
+  button { margin-top:8px; padding:8px 14px; border-radius:8px; border:1px solid var(--muted); background:var(--card); color:var(--fg); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Return to the Mineral Murals app</h1>
+  <p id="lead">Your shop said yes. Opening the app to finish connecting…</p>
+  <a class="button" id="app" href="#">Return to the Mineral Murals app</a>
+  <a class="button secondary" id="mac" href="#">Finish on this Mac instead</a>
+  <details id="manual">
+    <summary>App didn't open?</summary>
+    <p>Copy this and paste it into Connections in the app (or the Seller Hub on your Mac). It works once and expires in 10 minutes.</p>
+    <textarea id="code" readonly></textarea>
+    <button type="button" id="copy">Copy</button>
+  </details>
+</main>
+<script>
+// Forwards the marketplace's ?code=…&state=… to the app or this Mac. Holds no secrets and
+// sends nothing anywhere else. The code is useless without the app's one-time state and keys.
+(function () {
+  var q = location.search;
+  var app = 'mineralmurals://oauth-callback' + q;
+  var mac = 'http://127.0.0.1:8787/api/marketplaces/callback' + q;
+  var $ = function (id) { return document.getElementById(id); };
+  $('app').href = app; $('mac').href = mac; $('code').value = q.replace(/^\?/, '');
+  $('copy').onclick = function () {
+    var box = $('code'); box.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(box.value) : Promise.reject()).catch(function () { document.execCommand('copy'); });
+    this.textContent = 'Copied';
+  };
+  if (!/[?&]state=/.test(q)) {
+    $('title').textContent = 'Mineral Murals sign-in helper';
+    $('lead').textContent = 'This page only hands an eBay or Etsy sign-in back to the Mineral Murals app. Start from Connect eBay or Connect Etsy in the app.';
+    $('app').style.display = $('mac').style.display = $('manual').style.display = 'none';
+    return;
+  }
+  if (/[?&]error=/.test(q)) $('lead').textContent = 'The sign-in was cancelled or refused. Go back to the app and tap Connect again.';
+  // Clear the code from history so Back doesn't replay it.
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) { $('mac').style.display = 'none'; location.href = app; }
+  else { $('lead').textContent = 'Finishing on this Mac…'; $('app').style.display = 'none'; location.href = mac; }
+})();
+</script>
+</body>
+</html>
